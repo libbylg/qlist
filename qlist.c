@@ -194,10 +194,8 @@ QLIST_EXTERN    quint32 qlist_save(qlist pq, void* data)
 
 
 
-QLIST_EXTERN    void* qlist_remove(qlist pq, quint32 token)
+static qitem_t* qlist_anchor(qlist_t* q, quint32 token)
 {
-    qlist_t* q = (qlist_t*)pq;
-
     //  计算待删除的项所处的位置
     qint32 bucket_index = (token & (~QLIST_TOKEN_MASK)) / q->unit_size;
     qint32 item_index   = (token & (~QLIST_TOKEN_MASK)) % q->unit_size;
@@ -207,7 +205,22 @@ QLIST_EXTERN    void* qlist_remove(qlist pq, quint32 token)
     }
 
     //  找对应的项
-    qitem_t* item = q->buckets[bucket_index]->items + item_index;
+    return q->buckets[bucket_index]->items + item_index;
+}
+
+
+
+
+QLIST_EXTERN    void* qlist_remove(qlist pq, quint32 token)
+{
+    qlist_t* q = (qlist_t*)pq;
+
+    //  定位到对应的 item
+    qitem_t* item = qlist_anchor(q, token);
+    if (NULL == item)
+    {
+        return NULL;
+    }
 
     //  检查 token 是否被重用
     if (item->token != token)
@@ -240,16 +253,12 @@ QLIST_EXTERN    void*   qlist_query(qlist pq, quint32 token)
 {
     qlist_t* q = (qlist_t*)pq;
 
-    //  计算待删除的项所处的位置
-    qint32 bucket_index = (token & (~QLIST_TOKEN_MASK)) / q->unit_size;
-    qint32 item_index   = (token & (~QLIST_TOKEN_MASK)) % q->unit_size;
-    if (bucket_index >= q->buckets_alloc)
+    //  定位到对应的 item
+    qitem_t* item = qlist_anchor(q, token);
+    if (NULL == item)
     {
         return NULL;
     }
-
-    //  找对应的项
-    qitem_t* item = q->buckets[bucket_index]->items + item_index;
 
     //  检查 token 是否被重用
     if (item->token != token)

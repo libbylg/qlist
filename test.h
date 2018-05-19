@@ -13,7 +13,7 @@ typedef void (*TEST_PROXY_FUNC)();
 
 typedef struct
 {
-    
+
 }result_t;
 
 typedef struct _test_t
